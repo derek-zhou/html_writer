@@ -1,6 +1,6 @@
 # HtmlWriter
 
-A library to write html text in a elixir way.
+A library to write html text in an elixir way.
 
 ## Installation
 
@@ -21,7 +21,7 @@ be found at [https://hexdocs.pm/html_writer](https://hexdocs.pm/html_writer).
 
 ## Motivation
 
-There are templates, and elixir's eex template is among the nicer ones. However, I still hate templates. It has bastardized syntax that is neither html or elixir (or any host programming language), feels awkward, and messes up syntax highlight in editors.
+There are templates, and elixir's eex template is among the nicer ones. However, I still hate templates. It has bastardized syntax that is neither html nor elixir (or any host programming language), feels awkward, and messes up syntax highlight in editors.
 
 There are cleaner looking template like [mustache template](https://mustache.github.io/), however the functionality is too weak. You would need to put significant view related code into the controller layer. 
 
@@ -50,7 +50,7 @@ Yes, it is more verbose, however:
  * it is pure elixir and can be refactored in any way you want 
  * there is no way to write mal-formed html
 
-If you already have the html, just want to change some small parts into dynamic content, you prabably should stick to templates. If you are printing complex HTML structure that is highly dynamic, you may want to try this.
+If you already have the html, just want to change some small parts into dynamic contents, you prabably should stick to templates. If you are printing complex HTML structure that is highly dynamic, you may want to try this.
 
 You could probably do similiar things with Phoenix.HTML but ity is not intended to be used this way and will be very awkward. 
 
@@ -109,4 +109,4 @@ Just write your own render function clauses with HtmlWriter then you can do away
 
 ## To contribute
 
-PR welcomed. The code is stable, only ~100 LOC, but poorly documented for now. I encourage users to read the code and understand what is it doing. 
+PRs are welcomed. The code is stable, only ~100 LOC, but poorly documented for now. I encourage users to read the code and understand what is it doing. 
