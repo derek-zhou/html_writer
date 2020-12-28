@@ -60,7 +60,7 @@ The library has no dependancy on Phoenix, you can use it in your standalone app 
 
 ```elixir
   import Kernel, except: [div: 2]
-  import Danm.HtmlWriter
+  import HtmlWriter
 ```
 
 You would need to un-import the `div/2` from kernel to avoid function name collision. then:
@@ -68,20 +68,23 @@ You would need to un-import the `div/2` from kernel to avoid function name colli
 ```elixir
     f = File.open!("my.html", [:write, :delayed_write, :utf8])
 
-    new_html()
+    html =
+	new_html()
     |> html(fn h ->
       h
       |> head(fn h ->
-	  h
-	|> meta(charset: "utf-8")
-	|> title("My title")
-      end)
+		  h
+		  |> meta(charset: "utf-8")
+		  |> title("My title")
+		  end)
       |> body(fn h ->
-	h |> print_my_body()
-    end, lang: "en")
+		  h
+		  |> print_my_body()
+		  end, lang: "en")
+	  end)
     |> export()
-    |> invoke(&IO.write(f, &1))
 
+	IO.write(f, html))
     File.close(f)
 ```
 
@@ -93,7 +96,7 @@ Of course you can also use it in a Phoenix app. I still use templates, but only 
 
 ```elixir
   import Kernel, except: [div: 2]
-  import RoastidiousWeb.HtmlWriter
+  import HtmlWriter
 
   def html_fragment(f), do: [] |> f.() |> export() |> Phoenix.HTML.raw()
   

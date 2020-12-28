@@ -1,15 +1,15 @@
 defmodule HtmlWriter do
   @moduledoc """
-  Provide helper functions to write html programatically into a chardata
+  Provide helper macros to write html programatically into a chardata
 
-  all functions in this module take an chardata as first argument and put more data in it
+  all macros in this module take an chardata as first argument and put more data in it
   as the return value
   """
 
   @doc ~S"""
   helper macro to bind a value to a name, in order to maintain flow of the pipe operator.
   For example: 
-  
+
   ```elixir
   v
   |> do_someting()
@@ -39,23 +39,48 @@ defmodule HtmlWriter do
 
   Using this one can maintian flow of the pipe chain.
   """
-  def roll_in(s, enum, function), do: Enum.reduce(enum, s, function)
+  defmacro roll_in(s, enum, function) do
+    quote do
+      Enum.reduce(unquote(enum), unquote(s), unquote(function))
+    end
+  end
 
   @doc ~S"""
   Invoke the func with s. This is used to keep the pipe flowing
   """
-  def invoke(s, func), do: func.(s)
+  defmacro invoke(s, func) do
+    quote do
+      unquote(func).(unquote(s))
+    end
+  end
 
   @doc ~S"""
   start with minimum boilerplate
   """
-  def new_html(), do: ["<!DOCTYPE html>\n"]
+  defmacro new_html() do
+    quote do
+      ["<!DOCTYPE html>\n"]
+    end
+  end
+
+  @doc ~S"""
+  Just add some text. Please note no text is escaped
+  """
+  defmacro text(s, text) do
+    quote do
+      [unquote(text) | unquote(s)]
+    end
+  end
 
   @doc ~S"""
   export the data.
   Since the data is a list, so all it does for now is Enum.reverse()
   """
-  def export(s), do: s |> Enum.reverse()
+  defmacro export(s) do
+    quote do
+      Enum.reverse(unquote(s))
+    end
+  end
 
   @doc ~S"""
   build a void-element, which is an element that should not have inner text. It may have attributes
@@ -85,14 +110,14 @@ defmodule HtmlWriter do
   def element(s, tag, text, attrs) when is_binary(text) do
     start_tag = "<#{tag}#{attr_string(attrs)}>"
     end_tag = "</#{tag}>\n"
-    [ end_tag | text([start_tag | s], text)]
+    [end_tag | text([start_tag | s], text)]
   end
 
   def element(s, tag, func, attrs) when is_function(func, 1) do
     start_tag = "<#{tag}#{attr_string(attrs)}>\n"
     end_tag = "</#{tag}>\n"
     inner = [] |> func.() |> Enum.reverse()
-    [ end_tag, inner, start_tag ] ++ s
+    [end_tag, inner, start_tag] ++ s
   end
 
   defp attr_string(attrs) do
@@ -109,18 +134,18 @@ defmodule HtmlWriter do
 
   defp one_attr_string({key}), do: " #{key}"
 
-  @doc ~S"""
-  Just add some text. Please note no text is escaped
-  """
-  def text(s, text) when is_binary(text), do: [ text | s]
-
   [:meta, :link, :hr, :br, :img]
   |> Enum.each(fn k ->
-    str = to_string(k)
     @doc ~s"""
-    build void element #{str}
+    build void element #{to_string(k)}
     """
-    def unquote(k)(s, attrs \\ []), do: element(s, unquote(str), attrs)
+    defmacro unquote(k)(s, attrs \\ []) do
+      str = to_string(unquote(k))
+
+      quote do
+        element(unquote(s), unquote(str), unquote(attrs))
+      end
+    end
   end)
 
   [
@@ -140,6 +165,7 @@ defmodule HtmlWriter do
     :h6,
     :p,
     :a,
+    :nav,
     :div,
     :span,
     :em,
@@ -154,13 +180,18 @@ defmodule HtmlWriter do
     :label,
     :textarea,
     :pre,
-    :button ]
+    :button
+  ]
   |> Enum.each(fn k ->
-    str = to_string(k)
     @doc ~s"""
-    build non-void element #{str}
+    build non-void element #{to_string(k)}
     """
-    def unquote(k)(s, inner, attrs \\ []), do: element(s, unquote(str), inner, attrs)
-  end)
+    defmacro unquote(k)(s, inner, attrs \\ []) do
+      str = to_string(unquote(k))
 
+      quote do
+        element(unquote(s), unquote(str), unquote(inner), unquote(attrs))
+      end
+    end
+  end)
 end
