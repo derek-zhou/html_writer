@@ -10,7 +10,7 @@ by adding `html_writer` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:html_writer, "~> 0.1.0"}
+    {:html_writer, "~> 0.1.1"}
   ]
 end
 ```
@@ -25,7 +25,7 @@ There are templates, and elixir's eex template is among the nicer ones. However,
 
 There are cleaner looking template like [mustache template](https://mustache.github.io/), however the functionality is too weak. You would need to put significant view related code into the controller layer. 
 
-HtmlWriter is not a template system. It is just a simple elixir library making heavy use of closures and pipe operators so you can write html in a functional language way. Here is a simple example:
+HtmlWriter is not a template system. It is just a simple elixir library making heavy use of closures and pipe operators so you can write html in a functional way. Here is a simple example:
 
 ```elixir
 []
@@ -54,6 +54,20 @@ If you already have the html, just want to change some small parts into dynamic 
 
 You could probably do similiar things with Phoenix.HTML but ity is not intended to be used this way and will be very awkward. 
 
+There is also some helper macros that make your code easier to read:
+
+```elixir
+[]
+|> ul(fn h ->
+	h
+	|> roll_in(["a", "b", "c"], fn each, h ->
+		h |> li(each)
+	end)
+end)
+	
+```
+Can you guess what it will do?
+
 ## Usage without Phoenix
 
 The library has no dependancy on Phoenix, you can use it in your standalone app to print html files. Just import the library so all html functions came into your scope:
@@ -68,7 +82,6 @@ You would need to un-import the `div/2` from kernel to avoid function name colli
 ```elixir
     f = File.open!("my.html", [:write, :delayed_write, :utf8])
 
-    html =
 	new_html()
     |> html(fn h ->
       h
@@ -83,6 +96,7 @@ You would need to un-import the `div/2` from kernel to avoid function name colli
 		  end, lang: "en")
 	  end)
     |> export()
+	|> bind_to(html)
 
 	IO.write(f, html))
     File.close(f)
@@ -98,7 +112,7 @@ Of course you can also use it in a Phoenix app. I still use templates, but only 
   import Kernel, except: [div: 2]
   import HtmlWriter
 
-  def html_fragment(f), do: [] |> f.() |> export() |> Phoenix.HTML.raw()
+  defp html_fragment(f), do: [] |> f.() |> export() |> Phoenix.HTML.raw()
   
   def render("index.html", %{key: value}) do
     html_fragment(fn h ->
