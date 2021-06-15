@@ -172,7 +172,7 @@ defmodule HtmlWriter do
     :b,
     :i,
     :u,
-    :blockqoute,
+    :blockquote,
     :del,
     :code,
     :strong,
