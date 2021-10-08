@@ -10,7 +10,7 @@ by adding `html_writer` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:html_writer, "~> 0.1.1"}
+    {:html_writer, "~> 0.2"}
   ]
 end
 ```
@@ -68,6 +68,9 @@ end)
 ```
 Can you guess what it will do?
 
+Please also keep in mind that nothing is escaped by default. You'll have to esacape the problematic
+string your self by calling `escape/1`.
+
 ## Usage without Phoenix
 
 The library has no dependancy on Phoenix, you can use it in your standalone app to print html files. Just import the library so all html functions came into your scope:
@@ -106,13 +109,13 @@ As you can see, everything fit into the flow. Most functions in this library tak
 
 ## Usage with Phoenix
 
-Of course you can also use it in a Phoenix app. I still use templates, but only for layouts. My inner views are all elixir code, without templates. In your view model:
+Of course you can also use it in a Phoenix app. I still use templates, but only for layouts. My inner views are all elixir code, without templates. In your view module:
 
 ```elixir
   import Kernel, except: [div: 2]
   import HtmlWriter
 
-  defp html_fragment(f), do: [] |> f.() |> export() |> Phoenix.HTML.raw()
+  defp html_fragment(f), do: f |> fragment() |> Phoenix.HTML.raw()
   
   def render("index.html", %{key: value}) do
     html_fragment(fn h ->
@@ -122,7 +125,43 @@ Of course you can also use it in a Phoenix app. I still use templates, but only 
   
 ```
 
-Just write your own render function clauses with HtmlWriter then you can do away the templates. I also don't use or import `Phoenix.HTML` into my view modules to avoid function name collisions.  The `html_fragment/1` is not provided in the library because I don't want to pull in dependancy for such a simple thing. 
+Just write your own render function clauses with HtmlWriter then you can do away the templates. I also don't use or import `Phoenix.HTML` into my view modules to avoid function name collisions.  The `html_fragment/1` is not provided in the library because I don't want to pull in dependancy for such a simple thing.
+
+It is also possible to completely get rid of `EEX` and `Phoenix.HTML` by implementing your layout modules in `HtmlWriter`. If you want to go down that route, you can:
+
+``` elixir
+config :phoenix, :format_encoders, html: nil
+```
+
+Then your layout module can be implemented as something like:
+
+``` elixir
+...
+  def wrap(assigns, inner) do
+	new_html()
+	|> html(fn h ->
+	  h
+	  |> head(&my_head(&1))
+	  |> body(fn h ->
+		 h
+		 |> my_header(assigns)
+		 |> div(inner, class: "content", id: "inner-content")
+		 |> my_footer(assigns)
+	  end)
+	end)
+	|> export()
+  end
+```
+
+And your view can be something like:
+
+``` elixir
+  def render("index.html", %{key: value} = assigns) do
+    Layout.wrap(assigns, fn h ->
+	  ...
+    end)
+  end
+```
 
 ## To contribute
 

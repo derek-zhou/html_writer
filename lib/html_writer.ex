@@ -83,6 +83,74 @@ defmodule HtmlWriter do
   end
 
   @doc ~S"""
+  build a html fragment with a builder function
+  """
+  def fragment(f), do: [] |> f.() |> export()
+
+  @doc ~S"""
+  build a html fragment with a predefined header string or io_list
+  """
+  def fragment(header, f) when is_binary(header), do: [header] |> f.() |> export()
+
+  def fragment(header, f) when is_list(header) do
+    # we need to reverse the header first because the builder will prepend
+    # and export will reverse
+    header
+    |> Enum.reverse()
+    |> f.()
+    |> export()
+  end
+
+  @doc ~S"""
+  escape the string to be HTML safe
+  """
+  def escape(str) when is_binary(str) do
+    IO.iodata_to_binary(to_iodata(str, 0, str, []))
+  end
+
+  # following code lifted from Plug.HTML
+  escapes = [
+    {?<, "&lt;"},
+    {?>, "&gt;"},
+    {?&, "&amp;"},
+    {?", "&quot;"},
+    {?', "&#39;"}
+  ]
+
+  for {match, insert} <- escapes do
+    defp to_iodata(<<unquote(match), rest::bits>>, skip, original, acc) do
+      to_iodata(rest, skip + 1, original, [acc | unquote(insert)])
+    end
+  end
+
+  defp to_iodata(<<_char, rest::bits>>, skip, original, acc) do
+    to_iodata(rest, skip, original, acc, 1)
+  end
+
+  defp to_iodata(<<>>, _skip, _original, acc) do
+    acc
+  end
+
+  for {match, insert} <- escapes do
+    defp to_iodata(<<unquote(match), rest::bits>>, skip, original, acc, len) do
+      part = binary_part(original, skip, len)
+      to_iodata(rest, skip + len + 1, original, [acc, part | unquote(insert)])
+    end
+  end
+
+  defp to_iodata(<<_char, rest::bits>>, skip, original, acc, len) do
+    to_iodata(rest, skip, original, acc, len + 1)
+  end
+
+  defp to_iodata(<<>>, 0, original, _acc, _len) do
+    original
+  end
+
+  defp to_iodata(<<>>, skip, original, acc, len) do
+    [acc | binary_part(original, skip, len)]
+  end
+
+  @doc ~S"""
   build a void-element, which is an element that should not have inner text. It may have attributes
   though. Don't call this unless you are making a custom element; use the element specific funcions
   instead.
@@ -90,7 +158,7 @@ defmodule HtmlWriter do
   tag is the tag name.
   attr are a keyword list of attrbutes, each value can be a string, an list of strings, or nil
   """
-  def element(s, tag, attrs) do
+  def tag(s, tag, attrs \\ []) do
     ["<#{tag}#{attr_string(attrs)}>\n" | s]
   end
 
@@ -103,6 +171,8 @@ defmodule HtmlWriter do
   inner can be nil, a string or a function with arity of 1 that build inner text
   attr are a keyword list of attrbutes, each value can be a string, an list of strings, or nil
   """
+  def element(s, tag, content, attrs \\ [])
+
   def element(s, tag, nil, attrs) do
     ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
   end
@@ -143,7 +213,7 @@ defmodule HtmlWriter do
       str = to_string(unquote(k))
 
       quote do
-        element(unquote(s), unquote(str), unquote(attrs))
+        tag(unquote(s), unquote(str), unquote(attrs))
       end
     end
   end)
