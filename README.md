@@ -127,13 +127,7 @@ Of course you can also use it in a Phoenix app. I still use templates, but only 
 
 Just write your own render function clauses with HtmlWriter then you can do away the templates. I also don't use or import `Phoenix.HTML` into my view modules to avoid function name collisions.  The `html_fragment/1` is not provided in the library because I don't want to pull in dependancy for such a simple thing.
 
-It is also possible to completely get rid of `EEX` and `Phoenix.HTML` by implementing your layout modules in `HtmlWriter`. If you want to go down that route, you can:
-
-``` elixir
-config :phoenix, :format_encoders, html: nil
-```
-
-Then your layout module can be implemented as something like:
+It is also possible to completely get rid of `EEX` and `Phoenix.HTML` by implementing your layout modules in `HtmlWriter`. Your layout module can be implemented as something like:
 
 ``` elixir
 ...
@@ -156,12 +150,14 @@ Then your layout module can be implemented as something like:
 And your view can be something like:
 
 ``` elixir
-  def render("index.html", %{key: value} = assigns) do
+  def render("index.htm", %{key: value} = assigns) do
     Layout.wrap(assigns, fn h ->
 	  ...
     end)
   end
 ```
+
+By using the `htm` suffix instead of `html` suffix, you bypassed all the layout and HTML escaping from phoenix while still sending the correct `content_type`.
 
 ## To contribute
 
