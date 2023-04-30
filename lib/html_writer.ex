@@ -26,6 +26,45 @@ defmodule HtmlWriter do
   end
 
   @doc ~S"""
+  Like bind_to, but ignore nil or false
+  For example:
+
+  ```elixir
+  v
+  |> do_someting()
+  |> do_something_else()
+  ~> v
+  ```
+
+  This feel better than doing the assignment
+  """
+  defmacro value ~> name do
+    quote do
+      unquote(name) = unquote(value) || unquote(name)
+    end
+  end
+
+  @doc ~S"""
+  Like ~>, but reverse the order
+  For example:
+
+  ```elixir
+  v <~ if(condition?, do: do_something(v))
+  ```
+
+  which is shorter than:
+
+  ```elixir
+  v = if(condition?, do: do_something(v), else: v)
+  ```
+  """
+  defmacro name <~ value do
+    quote do
+      unquote(name) = unquote(value) || unquote(name)
+    end
+  end
+
+  @doc ~S"""
   This is Enum.reduce with first 2 arguments switched order.
 
   For example:
@@ -197,6 +236,8 @@ defmodule HtmlWriter do
   defp one_attr_string({key, value}) do
     case value do
       nil -> " #{key}"
+      true -> " #{key}"
+      false -> ""
       list when is_list(list) -> " #{key}=\"#{Enum.join(list, " ")}\""
       v -> " #{key}=\"#{v}\""
     end
