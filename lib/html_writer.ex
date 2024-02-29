@@ -216,6 +216,10 @@ defmodule HtmlWriter do
     ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
   end
 
+  def element(s, tag, "", attrs) do
+    ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
+  end
+
   def element(s, tag, text, attrs) when is_binary(text) do
     start_tag = "<#{tag}#{attr_string(attrs)}>"
     end_tag = "</#{tag}>\n"
@@ -223,10 +227,23 @@ defmodule HtmlWriter do
   end
 
   def element(s, tag, func, attrs) when is_function(func, 1) do
-    start_tag = "<#{tag}#{attr_string(attrs)}>\n"
-    end_tag = "</#{tag}>\n"
-    inner = [] |> func.() |> Enum.reverse()
-    [end_tag, inner, start_tag] ++ s
+    case Enum.reverse(func.([])) do
+      [] ->
+        ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
+
+      inner ->
+        ["</#{tag}>\n", inner, "<#{tag}#{attr_string(attrs)}>\n"] ++ s
+    end
+  end
+
+  def element(s, tag, attrs, func) when is_function(func, 1) do
+    case Enum.reverse(func.([])) do
+      [] ->
+        ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
+
+      inner ->
+        ["</#{tag}>\n", inner, "<#{tag}#{attr_string(attrs)}>\n"] ++ s
+    end
   end
 
   defp attr_string(attrs) do
@@ -251,10 +268,10 @@ defmodule HtmlWriter do
     build void element #{to_string(k)}
     """
     defmacro unquote(k)(s, attrs \\ []) do
-      str = to_string(unquote(k))
+      k = unquote(k)
 
       quote do
-        tag(unquote(s), unquote(str), unquote(attrs))
+        tag(unquote(s), unquote(k), unquote(attrs))
       end
     end
   end)
@@ -303,17 +320,19 @@ defmodule HtmlWriter do
     :label,
     :textarea,
     :pre,
-    :button
+    :button,
+    :template,
+    :slot
   ]
   |> Enum.each(fn k ->
     @doc ~s"""
     build non-void element #{to_string(k)}
     """
     defmacro unquote(k)(s, inner, attrs \\ []) do
-      str = to_string(unquote(k))
+      k = unquote(k)
 
       quote do
-        element(unquote(s), unquote(str), unquote(inner), unquote(attrs))
+        element(unquote(s), unquote(k), unquote(inner), unquote(attrs))
       end
     end
   end)
