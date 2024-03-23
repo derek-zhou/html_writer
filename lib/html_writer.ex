@@ -262,7 +262,7 @@ defmodule HtmlWriter do
 
   defp one_attr_string({key}), do: " #{key}"
 
-  [:meta, :link, :hr, :br, :img]
+  [:meta, :link, :hr, :br, :img, :input]
   |> Enum.each(fn k ->
     @doc ~s"""
     build void element #{to_string(k)}
@@ -314,7 +314,6 @@ defmodule HtmlWriter do
     :th,
     :td,
     :form,
-    :input,
     :select,
     :option,
     :label,
