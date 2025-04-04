@@ -28,12 +28,13 @@ There are cleaner looking template like [mustache template](https://mustache.git
 HtmlWriter is not a template system. It is just a simple elixir library making heavy use of closures and pipe operators so you can write html in a functional way. Here is a simple example:
 
 ```elixir
-[]
+new_fragment()
 |> div(fn h ->
    h
    |> h1("My Title")
    |> a("link text", href: "#")
 end, class: "my-class")
+|> export()
 ```
 
 Which will print the text as:
@@ -57,13 +58,14 @@ You could probably do similiar things with Phoenix.HTML but ity is not intended 
 There is also some helper macros that make your code easier to read:
 
 ```elixir
-[]
+new_fragment()
 |> ul(fn h ->
 	h
 	|> roll_in(["a", "b", "c"], fn each, h ->
 		h |> li(each)
 	end)
 end)
+|> export()
 	
 ```
 Can you guess what it will do?

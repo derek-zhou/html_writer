@@ -1,8 +1,9 @@
 defmodule HtmlWriter do
   @moduledoc """
-  Provide helper macros to write html programatically into a chardata
+  Provide helper function and macros to write html programatically into a chardata
 
-  all macros in this module take an chardata as first argument and put more data in it
+  all builder function/macro in this module take 2-tuple {s, acc} as the first argument and
+  the return value. put more data in it
   as the return value
   """
 
@@ -94,51 +95,36 @@ defmodule HtmlWriter do
   end
 
   @doc ~S"""
+  start with no boilerplate
+  """
+  def new_fragment(acc \\ nil), do: {[], acc}
+
+  @doc ~S"""
   start with minimum boilerplate
   """
-  defmacro new_html() do
-    quote do
-      ["<!DOCTYPE html>\n"]
-    end
-  end
+  def new_html(acc \\ nil), do: {["<!DOCTYPE html>\n"], acc}
 
   @doc ~S"""
   Just add some text. Please note no text is escaped
   """
-  defmacro text(s, text) do
-    quote do
-      [unquote(text) | unquote(s)]
-    end
-  end
+  def text({s, acc}, text), do: {[text | s], acc}
 
   @doc ~S"""
   export the data.
   Since the data is a list, so all it does for now is Enum.reverse()
   """
-  defmacro export(s) do
-    quote do
-      Enum.reverse(unquote(s))
-    end
-  end
+  def export({s, _acc}), do: Enum.reverse(s)
 
   @doc ~S"""
   build a html fragment with a builder function
   """
-  def fragment(f), do: [] |> f.() |> export()
+  def fragment(f), do: {[], nil} |> f.() |> export()
 
   @doc ~S"""
   build a html fragment with a predefined header string or io_list
   """
-  def fragment(header, f) when is_binary(header), do: [header] |> f.() |> export()
-
-  def fragment(header, f) when is_list(header) do
-    # we need to reverse the header first because the builder will prepend
-    # and export will reverse
-    header
-    |> Enum.reverse()
-    |> f.()
-    |> export()
-  end
+  def fragment(header, f) when is_binary(header), do: {[header], nil} |> f.() |> export()
+  def fragment(header, f), do: {Enum.reverse(header), nil} |> f.() |> export()
 
   @doc ~S"""
   escape the string to be HTML safe
@@ -196,9 +182,12 @@ defmodule HtmlWriter do
 
   tag is the tag name.
   attr are a keyword list of attrbutes, each value can be a string, an list of strings, or nil
+
+  The first argument and the return are 2-tuple {s, acc}, where s is the chirlist in bilding.
+  acc is a custom accumulator that this library does not inteprete, just faithfully pass along
   """
-  def tag(s, tag, attrs \\ []) do
-    ["<#{tag}#{attr_string(attrs)}>\n" | s]
+  def tag({s, acc}, tag, attrs \\ []) do
+    {["<#{tag}#{attr_string(attrs)}>\n" | s], acc}
   end
 
   @doc ~S"""
@@ -209,40 +198,43 @@ defmodule HtmlWriter do
   tag is the tag name.
   inner can be nil, a string or a function with arity of 1 that build inner text
   attr are a keyword list of attrbutes, each value can be a string, an list of strings, or nil
+
+  The first argument and the return are 2-tuple {s, acc}, where s is the chirlist in bilding.
+  acc is a custom accumulator that this library does not inteprete, just faithfully pass along
   """
   def element(s, tag, content, attrs \\ [])
 
-  def element(s, tag, nil, attrs) do
-    ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
+  def element({s, acc}, tag, nil, attrs) do
+    {["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s], acc}
   end
 
-  def element(s, tag, "", attrs) do
-    ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
+  def element({s, acc}, tag, "", attrs) do
+    {["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s], acc}
   end
 
-  def element(s, tag, text, attrs) when is_binary(text) do
+  def element({s, acc}, tag, text, attrs) when is_binary(text) do
     start_tag = "<#{tag}#{attr_string(attrs)}>"
     end_tag = "</#{tag}>\n"
-    [end_tag | text([start_tag | s], text)]
+    {[end_tag, text, start_tag | s], acc}
   end
 
-  def element(s, tag, func, attrs) when is_function(func, 1) do
-    case Enum.reverse(func.([])) do
-      [] ->
-        ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
+  def element({s, acc}, tag, func, attrs) when is_function(func, 1) do
+    case func.({[], acc}) do
+      {[], acc} ->
+        {["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s], acc}
 
-      inner ->
-        ["</#{tag}>\n", inner, "<#{tag}#{attr_string(attrs)}>\n"] ++ s
+      {inner, acc} ->
+        {["</#{tag}>\n", Enum.reverse(inner), "<#{tag}#{attr_string(attrs)}>\n"] ++ s, acc}
     end
   end
 
-  def element(s, tag, attrs, func) when is_function(func, 1) do
-    case Enum.reverse(func.([])) do
-      [] ->
-        ["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s]
+  def element({s, acc}, tag, attrs, func) when is_function(func, 1) do
+    case func.({[], acc}) do
+      {[], acc} ->
+        {["<#{tag}#{attr_string(attrs)}></#{tag}>\n" | s], acc}
 
-      inner ->
-        ["</#{tag}>\n", inner, "<#{tag}#{attr_string(attrs)}>\n"] ++ s
+      {inner, acc} ->
+        {["</#{tag}>\n", Enum.reverse(inner), "<#{tag}#{attr_string(attrs)}>\n"] ++ s, acc}
     end
   end
 

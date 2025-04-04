@@ -4,7 +4,7 @@ defmodule HtmlWriter.MixProject do
   def project do
     [
       app: :html_writer,
-      version: "0.2.3",
+      version: "0.3.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       description: description(),
